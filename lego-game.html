@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lego Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const colors = ['teal', 'lightblue', 'purple', 'pink', 'green', 'red'];
+        const shapes = ['rectangle', 'triangle'];
+
+        function getRandomInt(max) {
+            return Math.floor(Math.random() * max);
+        }
+
+        function drawRectangle(color, x, y, width, height) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, width, height);
+        }
+
+        function drawTriangle(color, x, y, width, height) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x + width / 2, y + height);
+            ctx.lineTo(x + width, y);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawRandomShape() {
+            const color = colors[getRandomInt(colors.length)];
+            const shape = shapes[getRandomInt(shapes.length)];
+            const x = getRandomInt(canvas.width - 100);
+            const y = getRandomInt(canvas.height - 100);
+            const width = 50;
+            const height = 50;
+
+            if (shape === 'rectangle') {
+                drawRectangle(color, x, y, width, height);
+            } else {
+                drawTriangle(color, x, y, width, height);
+            }
+        }
+
+        canvas.addEventListener('click', () => {
+            drawRandomShape();
+        });
+    </script>
+</body>
+</html>
