@@ -26,46 +26,93 @@
         const ctx = canvas.getContext('2d');
 
         const colors = ['teal', 'lightblue', 'purple', 'pink', 'green', 'red'];
-        const shapes = ['rectangle', 'square', 'triangle'];
+        const characters = colors.map(color => ({
+            color,
+            x: 0,
+            y: 0,
+            width: 20,
+            height: 40,
+            speed: 20,
+        }));
 
-        function getRandomInt(max) {
-            return Math.floor(Math.random() * max);
+        let selectedCharacter = null;
+        let opponent = null;
+
+        function drawCharacter(character) {
+            ctx.fillStyle = character.color;
+            ctx.fillRect(character.x, character.y, character.width, character.height);
         }
 
-        function drawRectangle(color, x, y, width, height) {
-            ctx.fillStyle = color;
-            ctx.fillRect(x, y, width, height);
+        function drawCharacters() {
+            characters.forEach(character => drawCharacter(character));
         }
 
-        function drawTriangle(color, x, y, width, height) {
-            ctx.fillStyle = color;
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x + width / 2, y + height);
-            ctx.lineTo(x + width, y);
-            ctx.closePath();
-            ctx.fill();
+        function handleInput(event) {
+            if (!selectedCharacter) return;
+
+            switch (event.key) {
+                case 'ArrowUp':
+                    selectedCharacter.y -= selectedCharacter.speed;
+                    break;
+                case 'ArrowDown':
+                    selectedCharacter.y += selectedCharacter.speed;
+                    break;
+                case 'ArrowLeft':
+                    selectedCharacter.x -= selectedCharacter.speed;
+                    break;
+                case 'ArrowRight':
+                    selectedCharacter.x += selectedCharacter.speed;
+                    break;
+            }
+            checkWin();
         }
 
-        function drawRandomShape(x, y) {
-            const color = colors[getRandomInt(colors.length)];
-            const shape = shapes[getRandomInt(shapes.length)];
-            const width = getRandomInt(100) + 20;
-            const height = shape === 'rectangle' ? getRandomInt(100) + 20 : width;
-
-            if (shape === 'rectangle' || shape === 'square') {
-                drawRectangle(color, x, y, width, height);
-            } else {
-                drawTriangle(color, x, y, width, height);
+        function checkWin() {
+            if (selectedCharacter.x >= canvas.width - selectedCharacter.width) {
+                alert('You won!');
+            }
+            if (opponent.x >= canvas.width - opponent.width) {
+                alert('Opponent won!');
             }
         }
 
-        canvas.addEventListener('click', (event) => {
+        function selectCharacter(event) {
             const rect = canvas.getBoundingClientRect();
             const x = event.clientX - rect.left;
             const y = event.clientY - rect.top;
-            drawRandomShape(x, y);
-        });
+
+            characters.forEach(character => {
+                if (
+                    x >= character.x &&
+                    x <= character.x + character.width &&
+                    y >= character.y &&
+                    y <= character.y + character.height
+                ) {
+                    selectedCharacter = character;
+                    opponent = characters.find(c => c !== selectedCharacter);
+                    window.removeEventListener('click', selectCharacter);
+                    window.addEventListener('keydown', handleInput);
+                }
+            });
+        }
+
+        function positionCharacters() {
+            const spacing = (canvas.height - characters.length * 60) / (characters.length + 1);
+            characters.forEach((character, index) => {
+                character.x = 40;
+                character.y = spacing + index * (character.height + spacing);
+            });
+        }
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawCharacters();
+            requestAnimationFrame(gameLoop);
+        }
+
+        positionCharacters();
+        window.addEventListener('click', selectCharacter);
+        gameLoop();
     </script>
 </body>
 </html>
