@@ -32,11 +32,15 @@
             y: 0,
             width: 20,
             height: 40,
-            speed: 20,
+            speed: 30,
         }));
 
         let selectedCharacter = null;
-        let opponent = null;
+        let beginRace = false;
+        let winnerDeclared = false;
+        let pauseGameLoop = true;
+
+        const finishLineX = canvas.width - 100;
 
         function drawCharacter(character) {
             ctx.fillStyle = character.color;
@@ -47,72 +51,181 @@
             characters.forEach(character => drawCharacter(character));
         }
 
+        function drawFinishLine() {
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(finishLineX, 0);
+            ctx.lineTo(finishLineX, canvas.height);
+            ctx.stroke();
+        }
+
         function handleInput(event) {
             if (!selectedCharacter) return;
 
-            switch (event.key) {
-                case 'ArrowUp':
-                    selectedCharacter.y -= selectedCharacter.speed;
-                    break;
-                case 'ArrowDown':
-                    selectedCharacter.y += selectedCharacter.speed;
-                    break;
-                case 'ArrowLeft':
-                    selectedCharacter.x -= selectedCharacter.speed;
-                    break;
-                case 'ArrowRight':
-                    selectedCharacter.x += selectedCharacter.speed;
-                    break;
+            if (event.key === 'ArrowRight') {
+                selectedCharacter.x += selectedCharacter.speed;
             }
             checkWin();
         }
 
         function checkWin() {
-            if (selectedCharacter.x >= canvas.width - selectedCharacter.width) {
-                alert('You won!');
-            }
-            if (opponent.x >= canvas.width - opponent.width) {
-                alert('Opponent won!');
-            }
-        }
-
-        function selectCharacter(event) {
-            const rect = canvas.getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            const y = event.clientY - rect.top;
-
             characters.forEach(character => {
-                if (
-                    x >= character.x &&
-                    x <= character.x + character.width &&
-                    y >= character.y &&
-                    y <= character.y + character.height
-                ) {
-                    selectedCharacter = character;
-                    opponent = characters.find(c => c !== selectedCharacter);
-                    window.removeEventListener('click', selectCharacter);
-                    window.addEventListener('keydown', handleInput);
+                if (character.x + character.width >= finishLineX) {
+                    alert(`${character.color.toUpperCase()} WON!`);
+                    if (character === selectedCharacter) {
+                        playConfetti();
+                    }
+                    winnerDeclared = true;
                 }
             });
         }
 
-        function positionCharacters() {
-            const spacing = (canvas.height - characters.length * 60) / (characters.length + 1);
-            characters.forEach((character, index) => {
-                character.x = 40;
-                character.y = spacing + index * (character.height + spacing);
+    function playConfetti() {
+        const confettiCount = 300;
+        const confettiColors = ['#fce18a', '#ff726d', '#b48def', '#f4306d'];
+        const confettiArray = [];
+
+        for (let i = 0; i < confettiCount; i++) {
+            confettiArray.push({
+                x: selectedCharacter.x + selectedCharacter.width / 2,
+                y: selectedCharacter.y + selectedCharacter.height / 2,
+                radius: Math.random() * 5,
+                dx: Math.random() * 6 - 3,
+                dy: Math.random() * -6 + 2,
+                color: confettiColors[Math.floor(Math.random() * confettiColors.length)],
+                ttl: 100,
             });
         }
 
-        function gameLoop() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawCharacters();
-            requestAnimationFrame(gameLoop);
+        function updateConfetti() {
+            for (const confetti of confettiArray) {
+                confetti.x += confetti.dx;
+                confetti.y += confetti.dy;
+                confetti.ttl--;
+                confetti.dy += 0.1;
+            }
+
+            confettiArray.forEach((confetti, index) => {
+                if (confetti.ttl <= 0) {
+                    confettiArray.splice(index, 1);
+                }
+            });
         }
 
-        positionCharacters();
-        window.addEventListener('click', selectCharacter);
-        gameLoop();
+        function drawConfetti() {
+            ctx.save();
+            for (const confetti of confettiArray) {
+                ctx.fillStyle = confetti.color;
+                ctx.beginPath();
+                ctx.arc(confetti.x, confetti.y, confetti.radius, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+        
+        function confettiLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // drawFinishLine();
+            // drawCharacters();
+            updateConfetti();
+            drawConfetti();
+
+            if (confettiArray.length) {
+                requestAnimationFrame(confettiLoop);
+            } else {
+                gameLoop();
+            }
+        }
+
+        confettiLoop();
+    }
+
+    function selectCharacter(event) {
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        characters.forEach(character => {
+            if (
+                x >= character.x &&
+                x <= character.x + character.width &&
+                y >= character.y &&
+                y <= character.y + character.height
+            ) {
+                selectedCharacter = character;
+                window.removeEventListener('click', selectCharacter);
+                window.addEventListener('keydown', handleInput);
+                countdown(3, () => {
+                    beginRace = true
+                    pauseGameLoop = false
+                })
+            }
+        });
+    }
+
+    function positionCharacters() {
+        const spacing = (canvas.height - characters.length * 60) / (characters.length + 1);
+        characters.forEach((character, index) => {
+            character.x = 40;
+            character.y = spacing + index * (character.height + spacing);
+        });
+    }
+
+    function updateOpponents() {
+        characters.forEach(character => {
+            if (character !== selectedCharacter) {
+                character.x += character.speed;
+                character.speed = 1 + Math.random() * 3;
+            }
+        });
+    }
+
+    function gameLoop() {
+        drawFinishLine();
+        drawCharacters();
+
+        if (!pauseGameLoop) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawFinishLine();
+            drawCharacters();
+            if(selectedCharacter && beginRace && !winnerDeclared) {
+                updateOpponents();
+                checkWin();
+            }
+        }
+        requestAnimationFrame(gameLoop);
+    }
+
+    positionCharacters();
+    window.addEventListener('click', selectCharacter);
+    gameLoop();
+
+    function countdown(seconds, callback) {
+        let remainingTime = seconds;
+
+        function drawCountdown() {
+            console.log(remainingTime)
+            ctx.font = '48px sans-serif';
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillText(remainingTime, canvas.width / 2, canvas.height / 2);
+        }
+
+        function tick() {
+            if (remainingTime > 0) {
+                drawCountdown();
+                remainingTime -= 1;
+                setTimeout(tick, 1000);
+            } else {
+                callback();
+            }
+        }
+
+        tick();
+    }
     </script>
 </body>
 </html>
