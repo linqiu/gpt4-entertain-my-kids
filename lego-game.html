@@ -26,7 +26,7 @@
         const ctx = canvas.getContext('2d');
 
         const colors = ['teal', 'lightblue', 'purple', 'pink', 'green', 'red'];
-        const shapes = ['rectangle', 'triangle'];
+        const shapes = ['rectangle', 'square', 'triangle'];
 
         function getRandomInt(max) {
             return Math.floor(Math.random() * max);
@@ -47,23 +47,24 @@
             ctx.fill();
         }
 
-        function drawRandomShape() {
+        function drawRandomShape(x, y) {
             const color = colors[getRandomInt(colors.length)];
             const shape = shapes[getRandomInt(shapes.length)];
-            const x = getRandomInt(canvas.width - 100);
-            const y = getRandomInt(canvas.height - 100);
-            const width = 50;
-            const height = 50;
+            const width = getRandomInt(100) + 20;
+            const height = shape === 'rectangle' ? getRandomInt(100) + 20 : width;
 
-            if (shape === 'rectangle') {
+            if (shape === 'rectangle' || shape === 'square') {
                 drawRectangle(color, x, y, width, height);
             } else {
                 drawTriangle(color, x, y, width, height);
             }
         }
 
-        canvas.addEventListener('click', () => {
-            drawRandomShape();
+        canvas.addEventListener('click', (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            drawRandomShape(x, y);
         });
     </script>
 </body>
